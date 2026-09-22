@@ -1,0 +1,25 @@
+# Virtual environments
+.venv/
+/docker/
+
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE settings
+.idea/
+
+# Local configuration and secrets
+.env
+.env.*
+
+# Runtime output
+logs/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
