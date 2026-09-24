@@ -1,9 +1,6 @@
 import asyncio
 from typing import Optional
-
 from elasticsearch import AsyncElasticsearch
-from sqlalchemy.util import await_only
-from watchfiles import awatch
 
 from app.conf.app_config import ESConfig, app_config
 
@@ -22,15 +19,11 @@ class ESClientManager:
     async def close(self):
         await self.client.close()
 
-
 es_client_manager = ESClientManager(app_config.es)
 
 if __name__ == "__main__":
     async def test():
-
-        # 先初始化
         es_client_manager.init()
-
         client = es_client_manager.client
         index_name = "test_index"
 
@@ -118,10 +111,10 @@ if __name__ == "__main__":
                     "page_count": 311
                 }
             ],
-            # refresh=True  # 自动刷新  每插入一个文档就刷新一下  但性能效率特别低
+            # refresh=True, # 自动刷新  每插入一个文档就刷新一下  性能低
         )
 
-        # 等待1s后再查询
+        # 等待1S后再查询
         # await asyncio.sleep(1)
         # 在搜索前手动刷新一下
         await client.indices.refresh(index=index_name)

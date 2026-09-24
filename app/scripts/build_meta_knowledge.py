@@ -43,7 +43,7 @@ async def start_build():
 
             service = MetaKnowledgeService(
                 dw_mysql_repo=DWMysqlRepository(dw_session),
-                meta_mysql_repo=MetaMysqlRepository(meta_session),
+                meta_myql_repo=MetaMysqlRepository(meta_session),
                 value_es_repo=ValueESRepository(es_client_manager.client),
                 column_qdrant_repo=ColumnQdrantRepository(qdrant_client_manager.client),
                 metric_qdrant_repo=MetricQdrantRepository(qdrant_client_manager.client),
