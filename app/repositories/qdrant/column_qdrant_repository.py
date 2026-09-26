@@ -56,3 +56,15 @@ class ColumnQdrantRepository:
                     for j in range(len(batch_ids))
                 ],
             )
+
+    async def search(self, vector: list[float], score_threshold=0.6) -> list[ColumnInfoQdrant]:
+        result = await self.client.query_points(
+            collection_name=self.collection_name,
+            query=vector,
+            score_threshold=score_threshold,  # 匹配相似度的临界值，小于这个值的所有点忽略
+        )
+
+        # print(result.points)
+        # print(len(result.points[0].payload))
+        # return [point.payload for point in result.points]  # payload是纯字典
+        return [ColumnInfoQdrant(**point.payload) for point in result.points]

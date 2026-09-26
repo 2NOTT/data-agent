@@ -23,7 +23,7 @@ services:
       discovery.type: single-node
       xpack.security.enabled: "false" #禁用安全认证
     ports:
-      - "9201:9200"
+      - "9200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
   kibana:

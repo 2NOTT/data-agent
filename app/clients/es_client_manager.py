@@ -129,6 +129,7 @@ if __name__ == "__main__":
             },
         )
         print(result)
+        print(result["hits"]["hits"][0]["_source"])
 
         await es_client_manager.close()
 

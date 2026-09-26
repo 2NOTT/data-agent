@@ -10,8 +10,8 @@ from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantReposit
 class DataAgentContext(TypedDict):
     """Agent的上下文封装"""
     embedding_client: HuggingFaceEndpointEmbeddings # 向量服务器客户端
-    column_qdrant_repository: ColumnQdrantRepository # 字段向量库
-    metric_qdrant_repository: MetricQdrantRepository # 指标向量库
-    value_es_repository: ValueESRepository # 字段值全文索引库
-    meta_mysql_repository: MetaMysqlRepository # 元数据库
-    dw_mysql_repository: DWMysqlRepository # 数据仓库
+    column_qdrant_repo: ColumnQdrantRepository # 字段向量库
+    metric_qdrant_repo: MetricQdrantRepository # 指标向量库
+    value_es_repo: ValueESRepository # 字段值全文索引库
+    meta_mysql_repo: MetaMysqlRepository # 元数据库
+    dw_mysql_repo: DWMysqlRepository # 数据仓库

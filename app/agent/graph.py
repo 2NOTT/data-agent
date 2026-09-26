@@ -2,6 +2,7 @@ import asyncio
 
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.context import DataAgentContext
 from app.agent.nodes.correct_sql import correct_sql
@@ -16,6 +17,16 @@ from app.agent.nodes.recall_value import recall_value
 from app.agent.nodes.recall_column import recall_column
 from app.agent.nodes.extract_keywords import extract_keywords
 from app.agent.nodes.validate_sql import validate_sql
+from app.core.log import logger
+from app.repositories.es.value_es_repository import ValueESRepository
+from app.repositories.mysql.dw_mysql_repository import DWMysqlRepository
+from app.repositories.mysql.meta_mysql_repository import MetaMysqlRepository
+from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
+from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.clients.embedding_client_manager import embedding_client_manager
+from app.clients.es_client_manager import es_client_manager
+from app.clients.mysql_client_manager import dw_mysql_client_manager, meta_mysql_client_manager
+from app.clients.qdrant_client_manager import qdrant_client_manager
 
 from app.agent.state import DataAgentState
 
@@ -65,16 +76,57 @@ graph = graph_builder.compile()
 
 if __name__ == "__main__":
     async def test():
-        state = DataAgentState(query="统计一下各地区的销售总额？")
-        # context = DataAgentContext()
-        async for chunk in graph.astream(
-                input=state,
-                # context=context,
-                stream_mode="custom"
-        ):
-            print(chunk)
+
+        # 1. 初始所有客户端管理器
+        embedding_client_manager.init()
+        es_client_manager.init()
+        dw_mysql_client_manager.init()
+        meta_mysql_client_manager.init()
+        qdrant_client_manager.init()
+
+        try:
+            # 2. 创建构建的业务对象
+            async with (dw_mysql_client_manager.session_factory() as dw_session,
+                        meta_mysql_client_manager.session_factory() as meta_session):
+                dw_session: AsyncSession
+                meta_session: AsyncSession
+
+                state = DataAgentState(query="统计一下华北地区的买了多少钱？")
+                context = DataAgentContext(
+                    dw_mysql_repo=DWMysqlRepository(dw_session),
+                    meta_mysql_repo=MetaMysqlRepository(meta_session),
+                    value_es_repo=ValueESRepository(es_client_manager.client),
+                    column_qdrant_repo=ColumnQdrantRepository(qdrant_client_manager.client),
+                    metric_qdrant_repo=MetricQdrantRepository(qdrant_client_manager.client),
+                    embedding_client=embedding_client_manager.client
+                )
+
+                # context = DataAgentContext()
+                async for chunk in graph.astream(
+                        input=state,
+                        context=context,
+                        stream_mode="custom"
+                ):
+                    print(chunk)
+
+        except Exception as e:
+            # 5.如果失败了，回滚事务
+            await dw_session.rollback()
+            await meta_session.rollback()
+            logger.error(f"构建知识库失败： {str(e)}")
+            raise e  # 方便查看异常具体情况
+        finally:
+            # 6. 最终都要关闭客户端管理器
+            await es_client_manager.close()
+            await dw_mysql_client_manager.close()
+            await meta_mysql_client_manager.close()
+            await qdrant_client_manager.close()
 
 
-    # asyncio.run(test())
+
+
+
+
+    asyncio.run(test())
     # print(graph.get_graph().draw_ascii())
-    print(graph.get_graph().draw_mermaid())
+    # print(graph.get_graph().draw_mermaid())

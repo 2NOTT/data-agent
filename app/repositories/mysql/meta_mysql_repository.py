@@ -1,3 +1,4 @@
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mysql.column_info_mysql import ColumnInfoMySQL
@@ -25,3 +26,18 @@ class MetaMysqlRepository:
     # 向column_metric表中插入多条数据
     def save_column_metrics(self, column_metrics: list[ColumnMetricMySQL]):
         self.session.add_all(column_metrics)
+
+    async def get_column_info_by_id(self, column_id) ->ColumnInfoMySQL:
+        return await self.session.get(ColumnInfoMySQL, column_id)
+
+    async def get_column_infos_by_table_id(self, table_id: str)->list[ColumnInfoMySQL]:
+        result = await self.session.execute(
+            Select(ColumnInfoMySQL)
+                .where(ColumnInfoMySQL.table_id==table_id)
+                .where(ColumnInfoMySQL.role.in_(["primary_key", "foreign_key"]))
+        )
+
+        return result.scalars().all()
+
+    async def get_table_info_by_table_id(self, table_id: str)->TableInfoMySQL:
+        return await self.session.get(TableInfoMySQL, table_id)

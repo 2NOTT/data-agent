@@ -57,3 +57,12 @@ class MetricQdrantRepository:
                     for j in range(len(batch_ids))
                 ],
             )
+
+    async def search_embedding(self, embedding: list[float], limit: int = 10):
+        points = await self.client.query_points(
+            collection_name=self.collection_name,
+            query=embedding,
+            score_threshold=0.6,
+            limit=limit,
+        )
+        return [point.payload for point in points.points]
