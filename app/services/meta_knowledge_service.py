@@ -1,4 +1,6 @@
 import uuid
+from datetime import date, datetime
+from decimal import Decimal
 
 from aiohttp import payload
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
@@ -99,7 +101,7 @@ class MetaKnowledgeService:
                     name=column.name,
                     type=column_type_dict[column.name],  # 需要检查表中字段类型
                     role=column.role,
-                    examples=examples, # 需要查表
+                    examples=_json_safe(examples), # 需要查表
                     description=column.description,
                     alias=column.alias,
                     table_id=table_info.id
@@ -195,7 +197,7 @@ class MetaKnowledgeService:
                 for value in values:
                     value_infos.append(ValueInfoES(
                         id=f"{column_info.id}.{value}",
-                        value=value,
+                        value=_json_safe(value),
                         type=column_info.type,
                         column_id=column_info.id,
                         column_name=column_info.name,
@@ -282,3 +284,19 @@ class MetaKnowledgeService:
 
         # 调用持久层保存到向量库
         await self.metric_qdrant_repo.upsert_metric_vectors(vectors, payloads, ids)
+
+
+def _json_safe(value):
+    """Convert database scalar values into JSON-compatible metadata values."""
+
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    return value

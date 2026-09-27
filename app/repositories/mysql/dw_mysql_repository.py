@@ -1,6 +1,8 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.sql_guard import validate_read_only_sql
+
 
 class DWMysqlRepository:
     def __init__(self, session: AsyncSession):
@@ -32,11 +34,14 @@ class DWMysqlRepository:
 
     async def validate_sql(self, sql):
         """校验SQL"""
-        await self.session.execute(text(f"explain {sql}"))
+        safe_sql = validate_read_only_sql(sql)
+        await self.session.execute(text(f"EXPLAIN {safe_sql}"))
+        return safe_sql
 
     async def execute_sql(self, sql):
         """执行一条查询的SQL"""
-        result = await self.session.execute(text(sql))
+        safe_sql = validate_read_only_sql(sql)
+        result = await self.session.execute(text(safe_sql))
         # return result.mappings().all()   #rowMapping对象  不能直接序列化
         return [dict(row) for row in result.mappings().all()]  # 转换为了字典的数组 =》方便序列化为json字符串
 

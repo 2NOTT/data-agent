@@ -24,7 +24,7 @@ db_dw:
   port: 3307
   user: root
   password: "123456"
-  database: dw
+  database: dw_edu
 
 # qdrant的配置
 qdrant:
@@ -46,5 +46,7 @@ es:
 
 # llm的配置
 llm:
-  model_name: deepseek-chat
-  api_key: REDACTED_API_KEY
+  provider: ${oc.env:LLM_PROVIDER,"deepseek"}
+  model_name: ${oc.env:LLM_MODEL,"deepseek-chat"}
+  api_key: ${oc.env:LLM_API_KEY,""}
+  base_url: ${oc.env:LLM_BASE_URL,""}
