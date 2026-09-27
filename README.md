@@ -64,7 +64,52 @@ SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V4-Flash
 
 ## 启动方式
 
-### 1. 启动基础设施
+### 0. 克隆项目
+
+项目包含用于本地 Embedding 服务的模型文件，模型通过 Git LFS 管理。第一次克隆前请安装并启用 Git LFS：
+
+```powershell
+git lfs install
+git clone https://github.com/2NOTT/data-agent.git
+cd data-agent
+git lfs pull
+```
+
+Embedding 模型约 1.3GB，首次拉取需要一定时间和磁盘空间。未安装 Git LFS 时，模型文件只是指针文件，Embedding 容器无法启动。
+
+运行环境要求：Windows 10/11 或 Linux、Python 3.12、Node.js 18+、npm、Docker Desktop，以及至少 6GB 可用内存。
+
+### 1. 安装 Python 依赖
+
+推荐使用 `uv`，它会根据 `uv.lock` 安装固定版本：
+
+```powershell
+python -m pip install uv
+uv sync
+```
+
+如果不使用 `uv`，也可以创建虚拟环境后安装项目依赖：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+### 2. 配置模型环境变量
+
+PowerShell 临时配置示例：
+
+```powershell
+$env:API_KEY = "你的模型密钥"
+$env:BASE_URL = "https://api.siliconflow.cn/v1"
+$env:MODEL = "deepseek-ai/DeepSeek-V4-Flash"
+```
+
+也可以在 PyCharm 的 `Run/Debug Configurations -> Environment variables` 中配置同名变量。密钥不要提交到 Git。
+
+### 3. 启动基础设施
 
 ```powershell
 docker compose -f docker/docker-compose.yaml up -d
@@ -72,7 +117,7 @@ docker compose -f docker/docker-compose.yaml up -d
 
 确认 MySQL、Elasticsearch、Qdrant 和 Embedding 容器处于运行状态。
 
-### 2. 初始化元数据
+### 4. 初始化元数据
 
 ```powershell
 .\.venv\Scripts\python.exe -m app.scripts.build_meta_knowledge
@@ -80,7 +125,7 @@ docker compose -f docker/docker-compose.yaml up -d
 
 必须使用模块方式运行，避免 Python 找不到 `app` 包。
 
-### 3. 构建前端
+### 5. 构建前端
 
 首次运行或修改前端代码后执行：
 
@@ -91,7 +136,7 @@ npm run build
 
 构建产物位于 `frontend/dist`，由 FastAPI 自动托管。
 
-### 4. 启动完整应用
+### 6. 启动完整应用
 
 在 PyCharm 中直接运行项目根目录的 `main.py`，然后打开 `http://localhost:8000`。
 
@@ -102,6 +147,17 @@ npm run build
 ```powershell
 npm run dev
 ```
+
+### 数据库初始化说明
+
+首次启动 MySQL 时，Docker 会自动执行 `docker/mysql` 下的初始化 SQL。已有同名数据卷时，初始化脚本不会重复执行；如果需要重新初始化演示数据，请确认不需要保留数据后执行：
+
+```powershell
+docker compose -f docker/docker-compose.yaml down -v
+docker compose -f docker/docker-compose.yaml up -d
+```
+
+这个操作会删除该 Compose 项目的本地数据库卷。
 
 ## 推荐演示问题
 
