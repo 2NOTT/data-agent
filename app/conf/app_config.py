@@ -120,9 +120,3 @@ elif generic_key:
     app_config.llm.base_url = generic_base_url or "https://api.siliconflow.cn/v1"
 elif os.getenv("DEEPSEEK_API_KEY"):
     app_config.llm.api_key = os.environ["DEEPSEEK_API_KEY"]
-
-
-
-if __name__ == "__main__":
-    print(app_config, type(app_config))
-    print(app_config.logging.file.path)
