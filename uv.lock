@@ -522,6 +522,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "loguru" },
     { name = "omegaconf" },
+    { name = "python-dotenv" },
     { name = "qdrant-client" },
     { name = "requests" },
     { name = "sqlalchemy" },
@@ -542,6 +543,7 @@ requires-dist = [
     { name = "langgraph", specifier = "==1.0.7" },
     { name = "loguru", specifier = "==0.7.3" },
     { name = "omegaconf", specifier = "==2.3.0" },
+    { name = "python-dotenv", specifier = ">=1.2,<2" },
     { name = "qdrant-client", specifier = "==1.16.2" },
     { name = "requests", specifier = ">=2.34.2" },
     { name = "sqlalchemy", specifier = "==2.0.46" },
@@ -1324,9 +1326,9 @@ source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
 dependencies = [
     { name = "jsonpointer" },
 ]
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/42/78/18813351fe5d63acad16aec57f94ec2b70a09e53ca98145589e185423873/jsonpatch-1.33.tar.gz", hash = "sha256:9fcd4009c41e6d12348b4a0ff2563ba56a2923a7dfee731d004e212e1ee5030c" }
+sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/42/78/18813351fe5d63acad16aec57f94ec2b70a09e53ca98145589e185423873/jsonpatch-1.33.tar.gz", hash = "sha256:9fcd4009c41e6d12348b4a0ff2563ba56a2923a7dfee731d004e212e1ee5030c", size = 21699, upload-time = "2023-06-26T12:07:29.144Z" }
 wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/73/07/02e16ed01e04a374e644b575638ec7987ae846d25ad97bcc9945a3ee4b0e/jsonpatch-1.33-py2.py3-none-any.whl", hash = "sha256:0ae28c0cd062bbd8b8ecc26d7d164fbbea9652a1a3693f3b956c1eae5145dade" },
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/73/07/02e16ed01e04a374e644b575638ec7987ae846d25ad97bcc9945a3ee4b0e/jsonpatch-1.33-py2.py3-none-any.whl", hash = "sha256:0ae28c0cd062bbd8b8ecc26d7d164fbbea9652a1a3693f3b956c1eae5145dade", size = 12898, upload-time = "2023-06-16T21:01:28.466Z" },
 ]
 
 [[package]]

@@ -124,13 +124,13 @@ tables:
 metrics:
   - name: ENROLLMENT_COUNT
     description: 报名人数，按 COUNT(DISTINCT student_id) 统计，排除 status_code=refunded 的报名。
-    relevant_columns: [fact_enrollment.enrollment_id]
+    relevant_columns: [fact_enrollment.student_id, fact_enrollment.status_code, fact_enrollment.enrollment_date]
     alias: [报名人数, 报名数, 报名数量, 学员报名数]
   - name: REVENUE
     description: 教育业务收入，按 SUM(amount) 统计，排除 status_code=refunded 的报名。
-    relevant_columns: [fact_enrollment.amount]
+    relevant_columns: [fact_enrollment.amount, fact_enrollment.status_code, fact_enrollment.enrollment_date]
     alias: [收入, 收入金额, 报名收入, 销售额]
   - name: COMPLETION_RATE
     description: 完课率，按 SUM(completed_sessions) / NULLIF(SUM(total_sessions), 0) 计算并转换为百分比，排除 status_code=refunded 的报名。
-    relevant_columns: [fact_enrollment.completed_sessions, fact_enrollment.total_sessions]
+    relevant_columns: [fact_enrollment.completed_sessions, fact_enrollment.total_sessions, fact_enrollment.status_code, fact_enrollment.enrollment_date]
     alias: [完课率, 完成率, 课程完成率]

@@ -34,6 +34,11 @@ import {
   YAxis,
 } from 'recharts'
 import './styles.css'
+import demoRecordings from './demo-queries.json'
+import { createReplayResponse } from './replay.js'
+import { toChartRows, inferChart } from './chart-data.js'
+
+const publicDemo = import.meta.env.MODE === 'demo'
 
 const examples = [
   '2026年1月至3月各校区的报名人数和收入是多少？',
@@ -54,17 +59,12 @@ function getRows(data) {
   return Array.isArray(data) ? data : []
 }
 
-function inferChart(rows) {
-  if (!rows.length) return { kind: 'empty', category: '', numeric: [] }
-  const keys = Object.keys(rows[0])
-  const numeric = keys.filter((key) => rows.some((row) => typeof row[key] === 'number'))
-  const category = keys.find((key) => !numeric.includes(key)) || keys[0]
-  const temporal = /日期|时间|月份|月|周|date|time|month/i.test(category)
-  return { kind: temporal ? 'line' : 'bar', category, numeric: numeric.slice(0, 2) }
-}
-
 function ChartPanel({ rows }) {
-  const chart = useMemo(() => inferChart(rows), [rows])
+  const chartRows = useMemo(() => toChartRows(rows), [rows])
+  const chart = useMemo(() => inferChart(chartRows), [chartRows])
+  const [selectedMetric, setSelectedMetric] = useState('')
+  const metric = chart.numeric.includes(selectedMetric) ? selectedMetric : chart.numeric[0]
+  const unit = rows.some((row) => typeof row[metric] === 'string' && row[metric].endsWith('%')) ? '%' : ''
   if (chart.kind === 'empty' || !chart.numeric.length) {
     return <div className="chart-empty"><BarChart3 size={21} /><span>查询结果中的数值字段会自动生成图表</span></div>
   }
@@ -72,16 +72,17 @@ function ChartPanel({ rows }) {
   const Chart = chart.kind === 'line' ? LineChart : BarChart
   return (
     <div className="chart-wrap">
-      <ResponsiveContainer width="100%" height={260}>
-        <Chart data={rows} margin={{ top: 10, right: 12, left: -14, bottom: 0 }}>
+      <select className="chart-metric" aria-label="图表指标" value={metric} onChange={(event) => setSelectedMetric(event.target.value)}>{chart.numeric.map((key) => <option key={key} value={key}>{key}</option>)}</select>
+      <ResponsiveContainer width="100%" height={230}>
+        <Chart data={chartRows} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#e7edf0" vertical={false} />
           <XAxis dataKey={chart.category} tick={{ fill: '#71828b', fontSize: 12 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: '#71828b', fontSize: 12 }} axisLine={false} tickLine={false} width={42} />
-          <Tooltip contentStyle={{ border: '1px solid #dbe5e8', borderRadius: 10, boxShadow: '0 8px 24px rgba(13,39,54,.08)' }} formatter={(value) => formatValue(value)} />
-          {chart.numeric.map((key, index) => chart.kind === 'line'
+          <YAxis tick={{ fill: '#71828b', fontSize: 12 }} tickFormatter={(value) => `${value}${unit}`} axisLine={false} tickLine={false} width={64} />
+          <Tooltip contentStyle={{ border: '1px solid #dbe5e8', borderRadius: 10, boxShadow: '0 8px 24px rgba(13,39,54,.08)' }} formatter={(value) => `${formatValue(value)}${unit}`} />
+          {[metric].map((key, index) => chart.kind === 'line'
             ? <Line key={key} type="monotone" dataKey={key} stroke={colors[index]} strokeWidth={3} dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} />
             : <Bar key={key} dataKey={key} fill={colors[index]} radius={[4, 4, 0, 0]} maxBarSize={38}>
-              {rows.map((_, rowIndex) => <Cell key={rowIndex} fill={colors[index]} opacity={rowIndex % 2 ? 0.78 : 1} />)}
+              {chartRows.map((_, rowIndex) => <Cell key={rowIndex} fill={colors[index]} opacity={rowIndex % 2 ? 0.78 : 1} />)}
             </Bar>)}
         </Chart>
       </ResponsiveContainer>
@@ -101,13 +102,14 @@ function App() {
   const [activeView, setActiveView] = useState('workspace')
 
   useEffect(() => {
+    if (publicDemo) return
     fetch('/health').then((response) => setServiceOnline(response.ok)).catch(() => setServiceOnline(false))
   }, [])
 
   const currentStage = events.at(-1) || ''
   const rows = getRows(result)
   const columns = rows.length ? Object.keys(rows[0]) : []
-  const hasCompletedQuery = Boolean(sql || error || events.length)
+  const hasCompletedQuery = Boolean(sql)
 
   async function ask(question = query) {
     const cleanQuestion = question.trim()
@@ -120,7 +122,7 @@ function App() {
     setEvents([])
     setActiveView('workspace')
     try {
-      const response = await fetch('/api/query', {
+      const response = publicDemo ? createReplayResponse(cleanQuestion, demoRecordings.queries) : await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
         body: JSON.stringify({ query: cleanQuestion }),
@@ -185,7 +187,7 @@ function App() {
           <button className={activeView === 'guide' ? 'active' : ''} onClick={() => setActiveView('guide')}><BookOpen size={17} /><span className="nav-text">数据说明</span></button>
         </nav>
         <div className="sidebar-bottom">
-          <div className="health-chip"><span className={serviceOnline ? 'status-dot online' : 'status-dot'}></span><span>{serviceOnline ? '服务已连接' : '等待服务连接'}</span></div>
+          <div className="health-chip"><span className={publicDemo || serviceOnline ? 'status-dot online' : 'status-dot'}></span><span>{publicDemo ? '在线演示 · 无需登录' : serviceOnline ? '服务已连接' : '等待服务连接'}</span></div>
           <div className="sidebar-note">只读查询 · LangGraph 编排<br />适用于教育经营分析</div>
         </div>
       </aside>
@@ -193,27 +195,28 @@ function App() {
       <main className="main-area">
         <header className="topbar">
           <div className="breadcrumb"><span>教育数据平台</span><ChevronRight size={14} /><strong>{activeView === 'workspace' ? '问数工作台' : activeView === 'history' ? '查询记录' : '数据说明'}</strong></div>
-          <div className="topbar-right"><div className="safe-badge"><ShieldCheck size={15} />只读安全模式</div><div className="avatar">廖</div></div>
+          <div className="topbar-right"><div className="safe-badge"><ShieldCheck size={15} />{publicDemo ? '示例数据演示' : '只读安全模式'}</div><div className="avatar">廖</div></div>
         </header>
 
         {activeView === 'workspace' && <div className="workspace-content">
           <section className="welcome-row">
             <div><p className="eyebrow">EDUCATION ANALYTICS</p><h1>把问题交给数据，<em>答案马上出现。</em></h1><p className="welcome-copy">用自然语言探索报名、收入、课程与完课率，让每一次运营判断都有数据依据。</p></div>
-            <div className="date-note"><Clock3 size={15} />今天 · 实时数仓</div>
+            <div className="date-note"><Clock3 size={15} />{publicDemo ? '演示数据 · 2026年1—3月' : '今天 · 实时数仓'}</div>
           </section>
 
+          {publicDemo && <div className="demo-notice"><div><strong>交互演示 · 真实查询回放</strong><p>选择下方 4 个示例，查看真实后端采集的过程、结果和 SQL。本页使用示例数据，不接收自由提问。</p></div><a href="https://github.com/2NOTT/data-agent" target="_blank" rel="noreferrer">查看项目源码 <ArrowUpRight size={15} /></a></div>}
           <section className="ask-box">
             <div className="ask-icon"><Search size={20} /></div>
-            <textarea value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); ask() } }} placeholder="例如：最近三个月各课程的报名人数和收入是多少？" rows={2} />
-            <div className="ask-actions"><span>Enter 发送 · Shift + Enter 换行</span><button className="send-button" onClick={() => ask()} disabled={loading || !query.trim()}>{loading ? <LoaderCircle size={17} className="spin" /> : <Send size={17} />}<span>{loading ? '分析中' : '开始分析'}</span></button></div>
+            <textarea aria-label="问数问题" readOnly={publicDemo} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); ask() } }} placeholder={publicDemo ? '点击下方任意示例，开始查看查询回放' : '例如：最近三个月各课程的报名人数和收入是多少？'} rows={2} />
+            <div className="ask-actions"><span>{publicDemo ? '选择下方示例 · 可重复回放' : 'Enter 发送 · Shift + Enter 换行'}</span><button className="send-button" onClick={() => ask()} disabled={loading || !query.trim()}>{loading ? <LoaderCircle size={17} className="spin" /> : <Send size={17} />}<span>{loading ? publicDemo ? '回放中' : '分析中' : publicDemo ? '回放示例' : '开始分析'}</span></button></div>
           </section>
 
           <div className="suggestions">{examples.map((example) => <button key={example} onClick={() => ask(example)}><Sparkles size={13} />{example}<ArrowUpRight size={13} /></button>)}</div>
 
-          {(loading || events.length > 0 || error) && <section className="process-panel panel"><div className="panel-heading"><div><span className="section-kicker">LIVE TRACE</span><h2>分析过程</h2></div><span className={loading ? 'live-state' : 'done-state'}>{loading ? <><Activity size={14} />正在处理</> : <><Check size={14} />已完成</>}</span></div><div className="stage-list">{flowStages.map((stage) => { const done = events.includes(stage); const current = currentStage === stage && loading; return <div className={`stage ${done ? 'done' : ''} ${current ? 'current' : ''}`} key={stage}><span className="stage-indicator">{done ? <Check size={12} /> : current ? <LoaderCircle size={12} className="spin" /> : ''}</span><span>{stage}</span>{current && <span className="stage-progress">处理中</span>}</div> })}</div>{error && <div className="error-box"><X size={16} /><span>{error}</span></div>}</section>}
+          {(loading || events.length > 0 || error) && <section className="process-panel panel"><div className="panel-heading"><div><span className="section-kicker">LIVE TRACE</span><h2>{publicDemo ? '查询过程回放' : '分析过程'}</h2></div><span className={loading ? 'live-state' : 'done-state'}>{loading ? <><Activity size={14} />正在处理</> : error ? <><X size={14} />查询失败</> : <><Check size={14} />{publicDemo ? '回放完成' : '已完成'}</>}</span></div><div className="stage-list">{flowStages.map((stage) => { const done = events.includes(stage); const current = currentStage === stage && loading; return <div className={`stage ${done ? 'done' : ''} ${current ? 'current' : ''}`} key={stage}><span className="stage-indicator">{done ? <Check size={12} /> : current ? <LoaderCircle size={12} className="spin" /> : ''}</span><span>{stage}</span>{current && <span className="stage-progress">处理中</span>}</div> })}</div>{error && <div className="error-box"><X size={16} /><span>{error}</span></div>}</section>}
 
           <section className="results-grid">
-            <div className="result-main panel"><div className="panel-heading"><div><span className="section-kicker">QUERY RESULT</span><h2>查询结果 {rows.length > 0 && <small>{rows.length} 条记录</small>}</h2></div><div className="heading-actions">{rows.length > 0 && <button className="icon-button" title="清空结果" onClick={clearResult}><RefreshCw size={16} /></button>}<Table2 size={19} className="muted-icon" /></div></div>{rows.length > 0 ? <div className="table-scroll"><table><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column}>{formatValue(row[column])}</td>)}</tr>)}</tbody></table></div> : <div className="empty-result"><div className="empty-icon"><Database size={22} /></div><strong>{hasCompletedQuery ? '本次查询没有匹配到数据' : '你的数据答案会出现在这里'}</strong><span>{hasCompletedQuery ? '可以换一个时间范围，例如 2026 年 1 月至 3 月。' : '输入一个经营问题，系统会自动生成 SQL 并返回可视化结果。'}</span></div>}</div>
+            <div className="result-main panel"><div className="panel-heading"><div><span className="section-kicker">QUERY RESULT</span><h2>查询结果 {rows.length > 0 && <small>{rows.length} 条记录</small>}</h2></div><div className="heading-actions">{rows.length > 0 && <button className="icon-button" title="清空结果" onClick={clearResult}><RefreshCw size={16} /></button>}<Table2 size={19} className="muted-icon" /></div></div>{rows.length > 0 ? <div className="table-scroll"><table><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column}>{formatValue(row[column])}</td>)}</tr>)}</tbody></table></div> : <div className="empty-result"><div className="empty-icon"><Database size={22} /></div><strong>{error ? '查询失败，请查看上方错误信息' : loading ? '正在分析你的问题' : hasCompletedQuery ? '本次查询没有匹配到数据' : '你的数据答案会出现在这里'}</strong><span>{error ? '解决错误后可以重新提交问题。' : loading ? '正在检索元数据、生成并执行查询。' : hasCompletedQuery ? '可以换一个时间范围，例如 2026 年 1 月至 3 月。' : '输入一个经营问题，系统会自动生成 SQL 并返回可视化结果。'}</span></div>}</div>
             <div className="result-chart panel"><div className="panel-heading"><div><span className="section-kicker">VISUAL SUMMARY</span><h2>趋势概览</h2></div><BarChart3 size={19} className="muted-icon" /></div><ChartPanel rows={rows} /></div>
           </section>
 

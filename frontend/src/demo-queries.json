@@ -1,0 +1,298 @@
+{
+  "captured_on": "2026-10-17",
+  "source": "本地 FastAPI + LangGraph + MySQL 真实查询，教育示例数据",
+  "queries": [
+    {
+      "query": "2026年1月至3月各校区的报名人数和收入是多少？",
+      "events": [
+        {
+          "stage": "提取关键字",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段",
+          "type": "progress"
+        },
+        {
+          "stage": "召回指标",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段值",
+          "type": "progress"
+        },
+        {
+          "stage": "合并召回",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤指标",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤表",
+          "type": "progress"
+        },
+        {
+          "stage": "添加额外信息",
+          "type": "progress"
+        },
+        {
+          "stage": "生成SQL",
+          "type": "progress"
+        },
+        {
+          "state": "校验SQL",
+          "type": "progress"
+        },
+        {
+          "state": "执行SQL",
+          "type": "progress"
+        },
+        {
+          "type": "result",
+          "sql": "SELECT c.campus_name, COUNT(DISTINCT fe.student_id) AS enrollment_count, SUM(fe.amount) AS revenue FROM fact_enrollment fe JOIN dim_campus c ON fe.campus_id = c.campus_id WHERE fe.status_code <> 'refunded' AND fe.enrollment_date BETWEEN '2026-01-01' AND '2026-03-31' GROUP BY c.campus_name",
+          "result": [
+            {
+              "campus_name": "广州校区",
+              "enrollment_count": 3,
+              "revenue": "7796.00"
+            },
+            {
+              "campus_name": "深圳校区",
+              "enrollment_count": 2,
+              "revenue": "6097.00"
+            },
+            {
+              "campus_name": "线上学习中心",
+              "enrollment_count": 3,
+              "revenue": "12296.00"
+            }
+          ]
+        },
+        {
+          "type": "done"
+        }
+      ]
+    },
+    {
+      "query": "2026年1月至3月完课率变化情况？",
+      "events": [
+        {
+          "stage": "提取关键字",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段",
+          "type": "progress"
+        },
+        {
+          "stage": "召回指标",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段值",
+          "type": "progress"
+        },
+        {
+          "stage": "合并召回",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤指标",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤表",
+          "type": "progress"
+        },
+        {
+          "stage": "添加额外信息",
+          "type": "progress"
+        },
+        {
+          "stage": "生成SQL",
+          "type": "progress"
+        },
+        {
+          "state": "校验SQL",
+          "type": "progress"
+        },
+        {
+          "state": "执行SQL",
+          "type": "progress"
+        },
+        {
+          "type": "result",
+          "sql": "SELECT DATE_FORMAT(enrollment_date, '%Y-%m') AS month, CONCAT(ROUND(SUM(completed_sessions) / NULLIF(SUM(total_sessions), 0) * 100, 2), '%') AS completion_rate FROM fact_enrollment WHERE enrollment_date BETWEEN '2026-01-01' AND '2026-03-31' AND status_code != 'refunded' GROUP BY DATE_FORMAT(enrollment_date, '%Y-%m') ORDER BY month",
+          "result": [
+            {
+              "month": "2026-01",
+              "completion_rate": "78.85%"
+            },
+            {
+              "month": "2026-02",
+              "completion_rate": "70.59%"
+            },
+            {
+              "month": "2026-03",
+              "completion_rate": "53.57%"
+            }
+          ]
+        },
+        {
+          "type": "done"
+        }
+      ]
+    },
+    {
+      "query": "各课程的报名人数排名如何？",
+      "events": [
+        {
+          "stage": "提取关键字",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段",
+          "type": "progress"
+        },
+        {
+          "stage": "召回指标",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段值",
+          "type": "progress"
+        },
+        {
+          "stage": "合并召回",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤指标",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤表",
+          "type": "progress"
+        },
+        {
+          "stage": "添加额外信息",
+          "type": "progress"
+        },
+        {
+          "stage": "生成SQL",
+          "type": "progress"
+        },
+        {
+          "state": "校验SQL",
+          "type": "progress"
+        },
+        {
+          "state": "执行SQL",
+          "type": "progress"
+        },
+        {
+          "type": "result",
+          "sql": "SELECT c.course_id, c.course_name, COUNT(DISTINCT f.student_id) AS ENROLLMENT_COUNT FROM fact_enrollment f JOIN dim_course c ON f.course_id = c.course_id WHERE f.status_code != 'refunded' GROUP BY c.course_id, c.course_name ORDER BY ENROLLMENT_COUNT DESC",
+          "result": [
+            {
+              "course_id": "C001",
+              "course_name": "Python数据分析",
+              "ENROLLMENT_COUNT": 3
+            },
+            {
+              "course_id": "C002",
+              "course_name": "RAG应用开发",
+              "ENROLLMENT_COUNT": 2
+            },
+            {
+              "course_id": "C003",
+              "course_name": "Java后端基础",
+              "ENROLLMENT_COUNT": 2
+            },
+            {
+              "course_id": "C004",
+              "course_name": "LangGraph智能体实战",
+              "ENROLLMENT_COUNT": 2
+            },
+            {
+              "course_id": "C005",
+              "course_name": "SQL数据分析",
+              "ENROLLMENT_COUNT": 2
+            }
+          ]
+        },
+        {
+          "type": "done"
+        }
+      ]
+    },
+    {
+      "query": "学生和成人学员的报名收入对比？",
+      "events": [
+        {
+          "stage": "提取关键字",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段",
+          "type": "progress"
+        },
+        {
+          "stage": "召回指标",
+          "type": "progress"
+        },
+        {
+          "stage": "召回字段值",
+          "type": "progress"
+        },
+        {
+          "stage": "合并召回",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤指标",
+          "type": "progress"
+        },
+        {
+          "stage": "过滤表",
+          "type": "progress"
+        },
+        {
+          "stage": "添加额外信息",
+          "type": "progress"
+        },
+        {
+          "stage": "生成SQL",
+          "type": "progress"
+        },
+        {
+          "state": "校验SQL",
+          "type": "progress"
+        },
+        {
+          "state": "执行SQL",
+          "type": "progress"
+        },
+        {
+          "type": "result",
+          "sql": "SELECT \n    d.student_type AS 学员类型,\n    SUM(f.amount) AS 报名收入\nFROM fact_enrollment f\nJOIN dim_student d ON f.student_id = d.student_id\nWHERE f.status_code != 'refunded'\n  AND d.student_type IN ('学生', '成人')\nGROUP BY d.student_type\nORDER BY 报名收入 DESC",
+          "result": [
+            {
+              "学员类型": "成人",
+              "报名收入": "10395.00"
+            },
+            {
+              "学员类型": "学生",
+              "报名收入": "7796.00"
+            }
+          ]
+        },
+        {
+          "type": "done"
+        }
+      ]
+    }
+  ]
+}

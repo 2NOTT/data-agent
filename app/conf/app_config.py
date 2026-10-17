@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
 #===================日志配置===================
@@ -87,6 +88,7 @@ class AppConfig:
 
 
 yaml_path = Path(__file__).resolve().parents[2] / "conf" / "app_config.yaml"
+load_dotenv(yaml_path.parent.parent / ".env", override=False)
 
 # 加载yaml文件
 yaml_data = OmegaConf.load(yaml_path)

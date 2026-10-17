@@ -33,16 +33,27 @@ async def filter_table(state: DataAgentState, runtime: Runtime[DataAgentContext]
             )
         })
 
+        # 指标公式依赖的字段不能由模型裁剪掉。
+        required_columns = {
+            column_id
+            for metric in state["metric_infos"]
+            for column_id in metric["relevant_columns"]
+        }
         # 2. 去对table_infos中的表和字段进行过滤
         for table_info in table_infos[:]:
             table_name = table_info["name"]
-            if table_name not in result:
+            required_names = {
+                column_id.split(".", 1)[1]
+                for column_id in required_columns
+                if column_id.startswith(f"{table_name}.")
+            }
+            if table_name not in result and not required_names:
                 table_infos.remove(table_info)  # 删除表
             else:
                 columns = table_info["columns"]
                 for column in columns[:]:
                     column_name = column["name"]
-                    if column_name not in result[table_name]:
+                    if column_name not in result.get(table_name, []) and column_name not in required_names:
                         columns.remove(column)  # 删除字段
 
         logger.info(f"过滤表完成:{table_infos}")

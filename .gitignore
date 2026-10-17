@@ -1,7 +1,7 @@
 # Virtual environments
 .venv/
 node_modules/
-/docker/
+/docker/embedding/**/.cache/
 
 # Python cache and test artifacts
 __pycache__/
@@ -16,6 +16,7 @@ __pycache__/
 # Local configuration and secrets
 .env
 .env.*
+!.env.example
 
 # Runtime output
 logs/
@@ -23,4 +24,5 @@ logs/
 # Build artifacts
 build/
 dist/
+frontend/demo-dist/
 *.egg-info/

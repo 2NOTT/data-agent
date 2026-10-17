@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 from app.conf.app_config import app_config
 
 def _missing_llm(_input):
-    raise RuntimeError("未配置 LLM_API_KEY、SILICONFLOW_API_KEY 或 DEEPSEEK_API_KEY，无法执行自然语言问数")
+    raise RuntimeError("未配置 API_KEY、LLM_API_KEY、SILICONFLOW_API_KEY 或 DEEPSEEK_API_KEY，请设置环境变量或项目根目录的 .env")
 
 
 if app_config.llm.api_key:
